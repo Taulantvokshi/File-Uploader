@@ -35,14 +35,14 @@ app.post('/upload', type, (req, res, next) => {
   writeStream.on('error', () => {
     res
       .status(500)
-      .json({ message: 'Something went wrong, Data is currupted' });
+      .json({ message: 'Something went wrong. Data is corrupted' });
   });
   var ReadableData = stream.Readable;
   var streamObj = new ReadableData();
   streamObj.push(req.file.buffer);
   streamObj.push(null);
   streamObj.pipe(writeStream);
-  res.status(200).json({ message: 'File has ben uploaded sucesfully' });
+  res.status(200).json({ message: 'File has been uploaded successfully' });
 });
 
 app.use('*', (req, res) => {
