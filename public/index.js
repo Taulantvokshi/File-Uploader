@@ -1,110 +1,127 @@
 const axios = require('axios');
 
 //GLOBALS
-let blob, imageType;
+let blob,
+  fileType,
+  isUploading = false;
 const loader = document.querySelector('.loader');
 const formData = document.querySelector('.form');
 const uploadButton = document.querySelector('.button');
 const percentHandler = document.querySelector('.percent');
+
+const imageContainer = document.querySelector('.image-container');
+const image = document.createElement('img');
+
+const newButton = document.querySelector('.new-button');
+const inputForm = document.getElementById('input');
+const fileText = document.createElement('h2');
+
+const notification = document.querySelector('.notification');
+const notificationText = document.querySelector('.notification-text');
+const notificationTextPar = document.querySelector('.notification-text-par');
+const notificationIcon = document.querySelector('.notification-correct');
+
+newButton.addEventListener('click', (_) => {
+  inputForm.click();
+});
+
 function readURL(input) {
+  const filePlaceholder = document.querySelector('.image-placeholder');
   if (input.files && input.files[0]) {
+    const type = input.files[0].type;
     var reader = new FileReader();
     reader.onload = function (e) {
-      const image = document.querySelector('.image-container');
-      const imageTag = document.createElement('img');
-
-      image.appendChild(imageTag);
-      imageTag.setAttribute('src', e.target.result);
-      imageTag.setAttribute('class', 'image');
-
-      //drawCanvasImage(imageTag, input.files[0].type);
+      if (isImage(type.split('/')[1])) {
+        document.createElement('h2').innerHTML = '';
+        filePlaceholder.style.display = 'none';
+        imageContainer.appendChild(image);
+        image.setAttribute('src', e.target.result);
+        image.setAttribute('class', 'image');
+      } else {
+        imageContainer.innerHTML = '';
+        fileText.textContent = type ? type : 'File extention not found';
+        imageContainer.appendChild(filePlaceholder);
+        imageContainer.appendChild(fileText);
+        imageContainer.appendChild(notification);
+        filePlaceholder.style.display = 'block';
+      }
     };
-    imageType = input.files[0].type;
+    fileType = type;
     blob = new Blob([input.files[0]], { type: input.files[0].type });
     reader.readAsDataURL(input.files[0]);
   }
 }
-// const getBase64 = (file) =>
-//   new Promise(function (resolve) {
-//     let reader = new FileReader();
-//     reader.readAsDataURL(file);
-//     reader.onload = () => resolve(reader.result);
-//   });
 
 uploadButton.addEventListener('click', () => {
-  if (blob) {
-    // getBase64(blob).then((res) => {
-    //const blobData = res.split(',')[1];
-    // let size = Math.round(blob.size * 1.4);
-    const file = new FormData();
-    file.append(
-      'blob',
-      blob,
-      `${new Date().getTime()}.${imageType.split('/')[1]}`
-    );
-    axios({
-      method: 'post',
-      url: 'http://localhost:4000/upload',
-      header: { 'Content-Type': 'multipart/form-data' },
-      data: file,
-      onUploadProgress: (e) => {
-        const percent = Math.round(
-          e.lengthComputable ? (e.loaded / e.total) * 100 : 0
-        );
-        loader.innerHTML = '';
-        loader.textContent = `${percent}%`;
-        percentHandler.style.width = `${percent}%`;
-      },
-    });
-    // });
+  if (!isUploading) {
+    if (blob) {
+      const file = new FormData();
+      file.append(
+        'blob',
+        blob,
+        `${new Date().getTime()}.${fileType.split('/')[1]}`
+      );
+      axios({
+        method: 'post',
+        url: 'http://localhost:4000/upload',
+        header: { 'Content-Type': 'multipart/form-data' },
+        data: file,
+        onUploadProgress: (e) => {
+          isUploading = true;
+          const percent = Math.round(
+            e.lengthComputable ? (e.loaded / e.total) * 100 : 0
+          );
+          loader.innerHTML = '';
+          loader.textContent = `${percent}%`;
+          percentHandler.style.width = `${percent}%`;
+          if (percent > 0) {
+            isUploading = true;
+          }
+          if (percent >= 100) {
+            isUploading = false;
+          }
+        },
+      })
+        .then((res) => {
+          notification.style.height = '3rem';
+          notificationTextPar.textContent = res.data.message;
+          notificationText.style.visibility = 'visible';
+          notificationIcon.style.visibility = 'visible';
+
+          setTimeout(() => {
+            notification.style.height = '0';
+            notificationText.style.visibility = 'hidden';
+            notificationIcon.style.visibility = 'hidden';
+          }, 3000);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
   }
 });
 
 formData.addEventListener('change', (e) => {
   readURL(e.target);
+  //THIS IS WHERE I SHOULD WORK
+  percentHandler.style.width = 0;
+  loader.innerHTML = '';
 });
 
-// function drawCanvasImage(imageObj, type) {
-//   const canvas = document.createElement('canvas');
-//   const context = canvas.getContext('2d');
-//   imageObj.onload = function () {
-//     let imgWidth = imageObj.naturalWidth;
-//     let screenWidth = canvas.width;
-//     let scaleX = 1;
-//     if (imgWidth > screenWidth) scaleX = screenWidth / imgWidth;
-//     let imgHeight = imageObj.naturalHeight;
-//     let screenHeight = canvas.height;
-//     let scaleY = 1;
-//     if (imgHeight > screenHeight) scaleY = screenHeight / imgHeight;
-//     let scale = scaleY;
-//     if (scaleX < scaleY) scale = scaleX;
-//     if (scale < 1) {
-//       imgHeight = imgHeight * scale;
-//       imgWidth = imgWidth * scale;
-//     }
-
-//     canvas.height = imgHeight;
-//     canvas.width = imgWidth;
-
-//     context.drawImage(
-//       imageObj,
-//       0,
-//       0,
-//       imageObj.naturalWidth,
-//       imageObj.naturalHeight,
-//       0,
-//       0,
-//       imgWidth,
-//       imgHeight
-//     );
-
-//     canvas.toBlob(
-//       (blobObject) => {
-//         blob = blobObject;
-//         imageType = type.split('/')[1];
-//       },
-//       type,
-//       1
-//     );
-//   };
-// }
+//ImageFormat
+// eslint-disable-next-line complexity
+function isImage(fType) {
+  if (
+    fType === 'jpeg' ||
+    fType === 'png' ||
+    fType === 'svg+xml' ||
+    fType === 'giff' ||
+    fType === 'bmp' ||
+    fType === 'apng' ||
+    fType === 'webp' ||
+    fType === 'tiff' ||
+    fType === 'x-icon'
+  ) {
+    return true;
+  }
+}

@@ -11,9 +11,29 @@
   </head>
   <body>
     <div class="upload">
-      <div class="image-container"></div>
+      <div class="image-container">
+        <div class="notification">
+          <div class="notification-correct">
+            <img src="./images/correct.png" />
+          </div>
+          <div class="notification-text">
+            <p class="notification-text-par">
+              File has ben uploaded sucesfully!
+            </p>
+          </div>
+        </div>
+        <div class="image-placeholder">
+          <img src="./images/image-placeholder.png" />
+        </div>
+      </div>
       <form class="form">
-        <input id="input" type="file" />
+        <input style="display: none;" id="input" type="file" />
+        <div class="new-button">
+          <div class="text-container">
+            <div class="image-container-2"><img src="./images/pick.png" /></div>
+            <p>Choose a file</p>
+          </div>
+        </div>
       </form>
       <div class="button">
         <div class="percent"></div>

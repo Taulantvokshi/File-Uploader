@@ -5,18 +5,11 @@ const fs = require('fs');
 const stream = require('stream');
 const multer = require('multer');
 
-var Busboy = require('busboy');
-
 app.use(express.json({ limit: '50mb' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use(express.static(path.join(__dirname, '..', '/public')));
-
-//Routes
-
-// var upload = multer({ dest: './uploads' });
-// var type = upload.single('blob');
 
 var storage = multer.memoryStorage();
 var upload = multer({ storage: storage });
@@ -32,21 +25,24 @@ app.use((req, res, next) => {
   }
 });
 
-// sends index.html
-
 app.post('/upload', type, (req, res, next) => {
   const writeStream = fs.createWriteStream(
     `./uploads/${new Date().getTime().toString()}.${
       req.file.mimetype.split('/')[1]
     }`
   );
-  //const imageBufferData = Buffer.from(req.body.image, 'base64');
+
+  writeStream.on('error', () => {
+    res
+      .status(500)
+      .json({ message: 'Something went wrong, Data is currupted' });
+  });
   var ReadableData = stream.Readable;
   var streamObj = new ReadableData();
   streamObj.push(req.file.buffer);
   streamObj.push(null);
   streamObj.pipe(writeStream);
-  res.json('hello');
+  res.status(200).json({ message: 'File has ben uploaded sucesfully' });
 });
 
 app.use('*', (req, res) => {
